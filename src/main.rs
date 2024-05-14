@@ -1,15 +1,48 @@
 use std::fmt::Display;
 
-macro_rules! pascal {
-
-
-    // const declarations
+macro_rules! types {
     (
-        const
-        $($tail:tt)*
+        integer
     ) => {
-        pascal!($($tail)*);
+        i64
     };
+    (
+       real 
+    ) => {
+        f64
+    };
+    (
+        string
+    ) => {
+        &str
+    };
+}
+macro_rules! var_decl {
+
+    (
+        $($inner:tt),* : $type:ident;
+        $($tail:tt)* 
+    ) => {
+        $(let mut $inner:types!($type) = Default::default());*;
+        var_decl!($($tail)*);
+    };
+
+    (
+        $($inner:tt),* : $type:ident = $value:tt;
+        $($tail:tt)* 
+    ) => {
+        $(let mut $inner:types!($type) = $value);*;
+        var_decl!($($tail)*);
+    };
+
+    (
+        $($inner:tt)* 
+    ) => {
+        pascal!($($inner)*)
+    };
+}
+
+macro_rules! const_decl {
 
     (
         $($inner:tt),* = $value:tt;
@@ -17,81 +50,27 @@ macro_rules! pascal {
     ) => {
 
         $(let $inner = $value);*;
-        pascal!($($tail)*);
+        const_decl!($($tail)*);
     };
 
-    // variable declarations
     (
-        var
+        $($inner:tt)* 
+    ) => {
+        pascal!($($inner)*)
+    };
+}
+
+macro_rules! body_decl {
+    (
+        end;
         $($tail:tt)*
     ) => {
         pascal!($($tail)*);
     };
-
-    // integer
     (
-        $($inner:tt),* : integer;
-        $($tail:tt)*
+        end.
     ) => {
-
-        $(let mut $inner:i64 = Default::default());*;
-        pascal!($($tail)*);
-    };
-
-    (
-        $($inner:tt),* : integer = $value:tt;
-        $($tail:tt)*
-    ) => {
-
-        $(let mut $inner:i64 = $value);*;
-        pascal!($($tail)*);
-    };
-
-    // real
-    (
-        $($inner:tt),* : real;
-        $($tail:tt)*
-    ) => {
-
-        $(let mut $inner:f64 = Default::default());*;
-        pascal!($($tail)*);
-    };
-
-    (
-        $($inner:tt),* : real = $value:tt;
-        $($tail:tt)*
-    ) => {
-
-        $(let mut $inner:f64 = $value);*;
-        pascal!($($tail)*);
-    };
-
-    // string
-    (
-        $($inner:tt),* : string;
-        $($tail:tt)*
-    ) => {
-
-        $(let mut $inner:&str = Default::default());*;
-        pascal!($($tail)*);
-    };
-
-    (
-        $($inner:tt),* : string = $value:expr;
-        $($tail:tt)*
-    ) => {
-
-        $(let mut $inner:String = $value);*;
-        pascal!($($tail)*);
-    };
-
-    // function call
-    (
-        $function_name:ident($($inner:expr),*);
-        $($tail:tt)*
-    ) => {
-        $function_name($($inner),*);
-        pascal!($($tail)*);
+        return
     };
 
     // variable initialization
@@ -101,28 +80,57 @@ macro_rules! pascal {
     ) => {
 
         $variable_name = $value;
-        pascal!($($tail)*);
+        body_decl!($($tail)*);
     };
 
-    // basic program structure
+    // function call
     (
-        end;
+        $function_name:ident($($inner:expr),*);
         $($tail:tt)*
     ) => {
-        return
+        $function_name($($inner),*);
+        body_decl!($($tail)*);
     };
+
+}
+
+macro_rules! pascal {
+
+    () => {};
+
     (
-        end.
+        const
         $($tail:tt)*
     ) => {
-        return
+        const_decl!($($tail)*);
     };
+
+    (
+        var
+        $($tail:tt)*
+    ) => {
+        var_decl!($($tail)*); 
+    };
+
+    //(
+    //    do
+    //    $($tail:tt)*
+    //) => {
+    //    
+    //    pascal!($($tail)*);
+    //    
+    //};
+
     (
         begin
         $($tail:tt)*
     ) => {
-            pascal!($($tail)*);
+        
+        body_decl!($($tail)*);
+        
     };
+
+
     (
         program
         $program_name: ident
@@ -150,6 +158,8 @@ pascal!(
 
     begin
         writeln(a+b);
+        writeln(ar);
+        writeln(a+b);
 
         writeln(ar+br);
         ar := 5.4;
@@ -163,5 +173,10 @@ pascal!(
         writeln(s);
         s := "123";
         writeln(s);
+        
+        a := 5;
+
     end.
 );
+
+
